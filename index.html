@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mallorca Live Activity Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet Heat CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .controls h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .time-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .time-display h4 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .time-display .current-time {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .time-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        
+        .time-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .legend {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .legend h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        #map {
+            width: 100%;
+            height: 600px;
+        }
+        
+        .ad-space {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            #map {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🏝️ Mallorca Live Activity Map</h1>
+            <p>See where the action is happening right now - based on recent Google Maps activity</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+            
+            <div class="controls">
+                <div class="ad-space">
+                    Google Ads Space
+                </div>
+                
+                <div class="time-display">
+                    <h4>Current Activity</h4>
+                    <div class="current-time" id="currentTime">Loading...</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="timeSlider">View Activity Throughout Day:</label>
+                    <input type="range" id="timeSlider" class="time-slider" min="0" max="23" value="12">
+                    <div id="sliderTime">12:00</div>
+                </div>
+                
+                <div class="legend">
+                    <h4>Activity Level</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2563eb;"></div>
+                        <span>Very Quiet (0-20%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #16a34a;"></div>
+                        <span>Quiet (20-40%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #eab308;"></div>
+                        <span>Moderate (40-60%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f97316;"></div>
+                        <span>Busy (60-80%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #dc2626;"></div>
+                        <span>Very Busy (80-100%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Supabase JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
+        const SUPABASE_URL = 'https://erpxirmfwebqlmmmcrpd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVycHhpcm1md2VicWxtbW1jcnBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NTk0NzgsImV4cCI6MjA3MTAzNTQ3OH0.c8BPSWK9n-7aMahe22URZR79Qt612KOp8LcwgqBhChU';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Initialize map centered on Palma
+        const map = L.map('map').setView([39.5696, 2.6502], 13);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Store data and markers
+        let businessesData = [];
+        let currentMarkers = [];
+
+        // Function to get activity color based on occupancy percentage
+        function getActivityColor(occupancy) {
+            if (occupancy >= 80) return '#dc2626'; // Very Busy - Red
+            if (occupancy >= 60) return '#f97316'; // Busy - Orange  
+            if (occupancy >= 40) return '#eab308'; // Moderate - Yellow
+            if (occupancy >= 20) return '#16a34a'; // Quiet - Green
+            return '#2563eb'; // Very Quiet - Blue
+        }
+
+        // Function to get current day of week in the format we stored
+        function getCurrentDayOfWeek() {
+            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+            return days[new Date().getDay()];
+        }
+
+        // Function to load businesses and their current activity
+        async function loadBusinessData() {
+            try {
+                // Load businesses
+                const { data: businesses, error: businessError } = await supabase
+                    .from('businesses')
+                    .select('*');
+
+                if (businessError) throw businessError;
+
+                businessesData = businesses;
+                console.log(`Loaded ${businesses.length} businesses`);
+
+                // Update display with current time
+                updateCurrentTimeDisplay();
+                
+                // Load and display current activity
+                await updateActivityDisplay();
+
+            } catch (error) {
+                console.error('Error loading business data:', error);
+            }
+        }
+
+        // Function to update current time display
+        function updateCurrentTimeDisplay() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            document.getElementById('currentTime').innerHTML = `${dayString}<br>${timeString}`;
+        }
+
+        // Function to update activity display based on time
+        async function updateActivityDisplay(hour = null) {
+            // Clear existing markers
+            currentMarkers.forEach(marker => map.removeLayer(marker));
+            currentMarkers = [];
+
+            const currentHour = hour !== null ? hour : new Date().getHours();
+            const currentDay = getCurrentDayOfWeek();
+
+            try {
+                // Get activity patterns for current time
+                const { data: patterns, error } = await supabase
+                    .from('activity_patterns')
+                    .select(`
+                        occupancy_percent,
+                        businesses (
+                            place_id,
+                            title,
+                            latitude,
+                            longitude,
+                            category
+                        )
+                    `)
+                    .eq('day_of_week', currentDay)
+                    .eq('hour', currentHour);
+
+                if (error) throw error;
+
+                // Add markers for each business with activity
+                patterns.forEach(pattern => {
+                    if (!pattern.businesses) return;
+
+                    const business = pattern.businesses;
+                    const occupancy = pattern.occupancy_percent;
+                    
+                    // Create marker with color based on activity level
+                    const marker = L.circleMarker([business.latitude, business.longitude], {
+                        radius: 8,
+                        fillColor: getActivityColor(occupancy),
+                        color: '#ffffff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    // Add popup with business info
+                    marker.bindPopup(`
+                        <div style="font-family: system-ui; padding: 5px;">
+                            <h4 style="margin: 0 0 5px 0; color: #333;">${business.title}</h4>
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">${business.category}</p>
+                            <p style="margin: 5px 0 0 0; font-weight: bold; color: ${getActivityColor(occupancy)};">
+                                ${occupancy}% Busy
+                            </p>
+                        </div>
+                    `);
+
+                    currentMarkers.push(marker);
+                });
+
+                console.log(`Updated map with ${patterns.length} business activities for ${currentDay} ${currentHour}:00`);
+
+            } catch (error) {
+                console.error('Error updating activity display:', error);
+            }
+        }
+
+        // Time slider functionality
+        const timeSlider = document.getElementById('timeSlider');
+        const sliderTime = document.getElementById('sliderTime');
+
+        timeSlider.addEventListener('input', function() {
+            const hour = parseInt(this.value);
+            const timeString = `${hour.toString().padStart(2, '0')}:00`;
+            sliderTime.textContent = timeString;
+            
+            // Update map with selected time
+            updateActivityDisplay(hour);
+        });
+
+        // Update time display every minute
+        setInterval(updateCurrentTimeDisplay, 60000);
+
+        // Auto-update activity display every 5 minutes (when showing current time)
+        setInterval(() => {
+            if (parseInt(timeSlider.value) === new Date().getHours()) {
+                updateActivityDisplay();
+            }
+        }, 300000);
+
+        // Initialize the application
+        loadBusinessData();
+
+        // Set slider to current hour
+        timeSlider.value = new Date().getHours();
+        sliderTime.textContent = `${new Date().getHours().toString().padStart(2, '0')}:00`;
+    </script>
+</body>
+</html>

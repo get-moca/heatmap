@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mallorca Live Activity Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0c4a6e 0%, #1e40af 50%, #7c3aed 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 20px rgba(0,0,0,0.3);
+            letter-spacing: -0.02em;
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            font-weight: 400;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .map-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .filters-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .filters-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            color: #6b7280;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .filter-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+        
+        .filter-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: fit-content;
+        }
+        
+        .time-display {
+            background: linear-gradient(135deg, #0c4a6e, #1e40af);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(12, 74, 110, 0.3);
+        }
+        
+        .time-display h4 {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .time-display .current-time {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .slider-container {
+            margin-bottom: 25px;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 12px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .time-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #e5e7eb, #d1d5db);
+            outline: none;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        
+        .time-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s ease;
+        }
+        
+        .time-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .slider-time {
+            text-align: center;
+            font-weight: 600;
+            color: #4b5563;
+            background: #f9fafb;
+            padding: 8px;
+            border-radius: 8px;
+        }
+        
+        .legend {
+            border-top: 2px solid #f3f4f6;
+            padding-top: 25px;
+        }
+        
+        .legend h4 {
+            color: #374151;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            margin-right: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .stats-display {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .stats-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .stats-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        #map {
+            width: 100%;
+            height: 650px;
+        }
+        
+        .ad-space {
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border: 2px dashed #cbd5e1;
+            border-radius: 15px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .ad-space::before {
+            content: "📢";
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .filters-container {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            #map {
+                height: 500px;
+            }
+            
+            .filter-buttons {
+                justify-content: center;
+            }
+            
+            .filter-btn {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+        }
+        
+        /* Custom leaflet popup styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .leaflet-popup-content {
+            margin: 15px;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🏝️ Mallorca Live Activity</h1>
+            <p>Discover where the action is happening right now across the island</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="map-section">
+                <div class="filters-container">
+                    <div class="filters-title">Filter by Business Type</div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-type="all">All</button>
+                        <button class="filter-btn" data-type="restaurant">Restaurants</button>
+                        <button class="filter-btn" data-type="cafe">Cafes</button>
+                        <button class="filter-btn" data-type="night_club">Bars & Clubs</button>
+                        <button class="filter-btn" data-type="tourist_attraction">Attractions</button>
+                        <button class="filter-btn" data-type="store">Shops</button>
+                        <button class="filter-btn" data-type="supermarket">Supermarkets</button>
+                        <button class="filter-btn" data-type="gym">Fitness</button>
+                        <button class="filter-btn" data-type="beauty_salon">Beauty</button>
+                        <button class="filter-btn" data-type="bakery">Bakery</button>
+                        <button class="filter-btn" data-type="movie_theater">Entertainment</button>
+                    </div>
+                </div>
+                
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="ad-space">
+                    Your Google Ads
+                    <small>Premium advertising space</small>
+                </div>
+                
+                <div class="time-display">
+                    <h4>Current Activity Level</h4>
+                    <div class="current-time" id="currentTime">Loading...</div>
+                </div>
+                
+                <div class="stats-display" id="statsDisplay">
+                    <div class="stats-item">
+                        <span class="stats-label">Showing:</span>
+                        <span class="stats-value" id="visibleCount">0 locations</span>
+                    </div>
+                    <div class="stats-item">
+                        <span class="stats-label">Filter:</span>
+                        <span class="stats-value" id="activeFilter">All types</span>
+                    </div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="timeSlider">Explore Activity Throughout the Day</label>
+                    <input type="range" id="timeSlider" class="time-slider" min="0" max="23" value="12">
+                    <div class="slider-time" id="sliderTime">12:00</div>
+                </div>
+                
+                <div class="legend">
+                    <h4>Activity Intensity</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2563eb;"></div>
+                        <span>Very Quiet (0-20%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #16a34a;"></div>
+                        <span>Quiet (20-40%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #eab308;"></div>
+                        <span>Moderate (40-60%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f97316;"></div>
+                        <span>Busy (60-80%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #dc2626;"></div>
+                        <span>Very Busy (80-100%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Supabase JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
+        const SUPABASE_URL = 'https://erpxirmfwebqlmmmcrpd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVycHhpcm1md2VicWxtbW1jcnBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NTk0NzgsImV4cCI6MjA3MTAzNTQ3OH0.c8BPSWK9n-7aMahe22URZR79Qt612KOp8LcwgqBhChU';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Initialize map centered on Mallorca with wider view
+        const map = L.map('map').setView([39.6953, 2.9068], 11);
+
+        // Add OpenStreetMap tiles with better styling
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Store data and markers
+        let businessesData = [];
+        let currentMarkers = [];
+        let activeFilter = 'all';
+
+        // Function to get activity color based on occupancy percentage
+        function getActivityColor(occupancy) {
+            if (occupancy >= 80) return '#dc2626'; // Very Busy - Red
+            if (occupancy >= 60) return '#f97316'; // Busy - Orange  
+            if (occupancy >= 40) return '#eab308'; // Moderate - Yellow
+            if (occupancy >= 20) return '#16a34a'; // Quiet - Green
+            return '#2563eb'; // Very Quiet - Blue
+        }
+
+        // Function to get current day of week in the format we stored
+        function getCurrentDayOfWeek() {
+            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+            return days[new Date().getDay()];
+        }
+
+        // Function to load businesses and their current activity
+        async function loadBusinessData() {
+            try {
+                // Load businesses
+                const { data: businesses, error: businessError } = await supabase
+                    .from('businesses')
+                    .select('*');
+
+                if (businessError) throw businessError;
+
+                businessesData = businesses;
+                console.log(`Loaded ${businesses.length} businesses`);
+
+                // Update display with current time
+                updateCurrentTimeDisplay();
+                
+                // Load and display current activity
+                await updateActivityDisplay();
+
+            } catch (error) {
+                console.error('Error loading business data:', error);
+            }
+        }
+
+        // Function to update current time display
+        function updateCurrentTimeDisplay() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            document.getElementById('currentTime').innerHTML = `${dayString}<br>${timeString}`;
+        }
+
+        // Function to update stats display
+        function updateStats(visibleCount) {
+            document.getElementById('visibleCount').textContent = `${visibleCount} locations`;
+            const filterText = activeFilter === 'all' ? 'All types' : 
+                               activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1).replace('_', ' ');
+            document.getElementById('activeFilter').textContent = filterText;
+        }
+
+        // Function to update activity display based on time and filter
+        async function updateActivityDisplay(hour = null) {
+            // Clear existing markers
+            currentMarkers.forEach(marker => map.removeLayer(marker));
+            currentMarkers = [];
+
+            const currentHour = hour !== null ? hour : new Date().getHours();
+            const currentDay = getCurrentDayOfWeek();
+
+            try {
+                let query = supabase
+                    .from('activity_patterns')
+                    .select(`
+                        occupancy_percent,
+                        businesses (
+                            place_id,
+                            title,
+                            latitude,
+                            longitude,
+                            category,
+                            business_type
+                        )
+                    `)
+                    .eq('day_of_week', currentDay)
+                    .eq('hour', currentHour);
+
+                // Apply filter if not "all"
+                if (activeFilter !== 'all') {
+                    query = query.eq('businesses.business_type', activeFilter);
+                }
+
+                const { data: patterns, error } = await query;
+                if (error) throw error;
+
+                // Add markers for each business with activity
+                let visibleCount = 0;
+                patterns.forEach(pattern => {
+                    if (!pattern.businesses) return;
+
+                    const business = pattern.businesses;
+                    const occupancy = pattern.occupancy_percent;
+                    
+                    // Create marker with color based on activity level
+                    const marker = L.circleMarker([business.latitude, business.longitude], {
+                        radius: 8,
+                        fillColor: getActivityColor(occupancy),
+                        color: '#ffffff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    }).addTo(map);
+
+                    // Add popup with business info
+                    marker.bindPopup(`
+                        <div style="font-family: 'Inter', system-ui; padding: 5px; min-width: 200px;">
+                            <h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 1.1rem; font-weight: 600;">${business.title}</h4>
+                            <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 0.9em; font-weight: 500;">${business.category}</p>
+                            <div style="display: flex; align-items: center; margin-top: 8px;">
+                                <div style="width: 12px; height: 12px; background: ${getActivityColor(occupancy)}; border-radius: 50%; margin-right: 8px;"></div>
+                                <span style="font-weight: 600; color: ${getActivityColor(occupancy)}; font-size: 0.95em;">
+                                    ${occupancy}% Busy Right Now
+                                </span>
+                            </div>
+                        </div>
+                    `);
+
+                    currentMarkers.push(marker);
+                    visibleCount++;
+                });
+
+                updateStats(visibleCount);
+                console.log(`Updated map with ${patterns.length} business activities for ${currentDay} ${currentHour}:00`);
+
+            } catch (error) {
+                console.error('Error updating activity display:', error);
+                updateStats(0);
+            }
+        }
+
+        // Filter button functionality
+        document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Update active filter
+                activeFilter = this.getAttribute('data-type');
+                
+                // Update display
+                updateActivityDisplay();
+            });
+        });
+
+        // Time slider functionality
+        const timeSlider = document.getElementById('timeSlider');
+        const sliderTime = document.getElementById('sliderTime');
+
+        timeSlider.addEventListener('input', function() {
+            const hour = parseInt(this.value);
+            const timeString = `${hour.toString().padStart(2, '0')}:00`;
+            sliderTime.textContent = timeString;
+            
+            // Update map with selected time
+            updateActivityDisplay(hour);
+        });
+
+        // Update time display every minute
+        setInterval(updateCurrentTimeDisplay, 60000);
+
+        // Auto-update activity display every 5 minutes (when showing current time)
+        setInterval(() => {
+            if (parseInt(timeSlider.value) === new Date().getHours()) {
+                updateActivityDisplay();
+            }
+        }, 300000);
+
+        // Initialize the application
+        loadBusinessData();
+
+        // Set slider to current hour
+        timeSlider.value = new Date().getHours();
+        sliderTime.textContent = `${new Date().getHours().toString().padStart(2, '0')}:00`;
+    </script>
+</body>
+</html>

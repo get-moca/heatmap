@@ -489,54 +489,74 @@
 
 
         function createBusinessTables() {
-            // Calculate average activity per business
-            const businessAverages = {};
+            console.log('Processing business activity data...');
             
-            // Initialize all businesses first
-            allBusinessData.forEach(business => {
-                businessAverages[business.id] = {
-                    total: 0,
-                    count: 0,
-                    title: business.title,
-                    category: business.category,
-                    business_type: business.business_type,
-                    hasActivityData: false
-                };
-            });
+            // Group all activity records by business_id
+            const businessActivityMap = {};
             
-            // Add activity data where available
             allActivityData.forEach(record => {
                 const businessId = record.business_id;
-                if (businessAverages[businessId]) {
-                    businessAverages[businessId].total += record.occupancy_percent;
-                    businessAverages[businessId].count += 1;
-                    businessAverages[businessId].hasActivityData = true;
+                
+                if (!businessActivityMap[businessId]) {
+                    businessActivityMap[businessId] = {
+                        activities: [],
+                        businessInfo: record.businesses || null
+                    };
+                }
+                
+                businessActivityMap[businessId].activities.push(record.occupancy_percent);
+            });
+            
+            console.log(`Found activity data for ${Object.keys(businessActivityMap).length} businesses`);
+            
+            // Calculate averages for businesses with activity data
+            const businessesWithAverage = [];
+            
+            Object.entries(businessActivityMap).forEach(([businessId, data]) => {
+                if (data.activities.length > 0 && data.businessInfo) {
+                    const totalActivity = data.activities.reduce((sum, activity) => sum + activity, 0);
+                    const avgActivity = Math.round(totalActivity / data.activities.length);
+                    
+                    businessesWithAverage.push({
+                        businessId: businessId,
+                        title: data.businessInfo.title,
+                        category: data.businessInfo.category,
+                        business_type: data.businessInfo.business_type,
+                        avgActivity: avgActivity,
+                        dataPoints: data.activities.length,
+                        totalActivity: totalActivity
+                    });
                 }
             });
-
-            // Convert to array and calculate averages
-            const businessList = Object.values(businessAverages).map(business => ({
-                ...business,
-                avgActivity: business.count > 0 ? Math.round(business.total / business.count) : 0
-            }));
-
-            // Filter businesses with activity data for meaningful comparison
-            const businessesWithData = businessList.filter(business => business.hasActivityData);
-            const businessesWithoutData = businessList.filter(business => !business.hasActivityData);
-
-            console.log(`Businesses with activity data: ${businessesWithData.length}`);
+            
+            console.log(`Calculated averages for ${businessesWithAverage.length} businesses`);
+            
+            // Sort to get busiest and quietest
+            const busiest = [...businessesWithAverage]
+                .sort((a, b) => b.avgActivity - a.avgActivity)
+                .slice(0, 20);
+                
+            const quietest = [...businessesWithAverage]
+                .sort((a, b) => a.avgActivity - b.avgActivity)
+                .slice(0, 20);
+            
+            console.log('Busiest business:', busiest[0]);
+            console.log('Quietest business:', quietest[0]);
+            
+            // Find businesses without activity data
+            const businessesWithActivityIds = new Set(Object.keys(businessActivityMap));
+            const businessesWithoutData = allBusinessData.filter(business => 
+                !businessesWithActivityIds.has(business.id.toString())
+            );
+            
             console.log(`Businesses without activity data: ${businessesWithoutData.length}`);
-
-            // Sort for busiest and quietest (only those with data)
-            const busiest = [...businessesWithData].sort((a, b) => b.avgActivity - a.avgActivity).slice(0, 20);
-            const quietest = [...businessesWithData].sort((a, b) => a.avgActivity - b.avgActivity).slice(0, 20);
-
+            
             // Populate tables
             populateBusinessTable('busiestBusinesses', busiest);
             populateBusinessTable('quietestBusinesses', quietest);
             
             // Update stats
-            updateDetailedStats(businessList, businessesWithData, businessesWithoutData);
+            updateDetailedStats(allBusinessData, businessesWithAverage, businessesWithoutData);
         }
 
         function populateBusinessTable(tableId, businesses) {
@@ -558,6 +578,9 @@
                     <td>
                         <div class="business-name">${business.title}</div>
                         <div class="business-type">${business.category}</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 2px;">
+                            ${business.dataPoints || 'N/A'} data points
+                        </div>
                     </td>
                     <td>${business.business_type?.replace('_', ' ') || 'Unknown'}</td>
                     <td>

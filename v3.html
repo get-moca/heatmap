@@ -346,13 +346,14 @@
                     <div class="filters-title">Filter by Business Type</div>
                     <div class="filter-buttons">
                         <button class="filter-btn active" data-type="all">All</button>
-                        <button class="filter-btn" data-type="cafe">Cafes</button>
-                        <button class="filter-btn" data-type="restaurant">Restaurants</button>
-                        <button class="filter-btn" data-type="bakery">Bakeries</button>
+                        <button class="filter-btn" data-type="bakery">Bakery</button>
+                        <button class="filter-btn" data-type="cafe">Cafe</button>
+                        <button class="filter-btn" data-type="restaurant">Restaurant</button>
                         <button class="filter-btn" data-type="night_club">Bars & Clubs</button>
                         <button class="filter-btn" data-type="casino">Casino</button>
                         <button class="filter-btn" data-type="gym">Fitness</button>
                         <button class="filter-btn" data-type="drugstore">Pharmacy</button>
+
                     </div>
                 </div>
                 
@@ -363,7 +364,7 @@
             
             <div class="sidebar">
                 <div class="ad-space">
-                    Your Google Ads
+                    Advertising
                     <small>Premium advertising space</small>
                 </div>
                 
@@ -371,8 +372,6 @@
                     <h4>Current Activity Level</h4>
                     <div class="current-time" id="currentTime">Loading...</div>
                 </div>
-                
-
                 
                 <div class="slider-container">
                     <label for="timeSlider">Explore Activity Throughout the Day</label>
@@ -415,12 +414,13 @@
 
     <script>
         // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        const SUPABASE_URL = 'https://erpxirmfwebqlmmmcrpd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVycHhpcm1md2VicWxtbW1jcnBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NTk0NzgsImV4cCI6MjA3MTAzNTQ3OH0.c8BPSWK9n-7aMahe22URZR79Qt612KOp8LcwgqBhChU';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Initialize map centered on Mallorca with wider view
-        const map = L.map('map').setView([39.6953, 2.9068], 11);
+        <!-- const map = L.map('map').setView([39.6953, 2.9068], 11); -->
+        const map = L.map('map').setView([39.5716, 2.6501], 14);
 
         // Add OpenStreetMap tiles with better styling
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -483,6 +483,14 @@
             const dayString = now.toLocaleDateString('en-US', { weekday: 'long' });
             
             document.getElementById('currentTime').innerHTML = `${dayString}<br>${timeString}`;
+        }
+
+        // Function to update stats display
+        function updateStats(visibleCount) {
+            document.getElementById('visibleCount').textContent = `${visibleCount} locations`;
+            const filterText = activeFilter === 'all' ? 'All types' : 
+                               activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1).replace('_', ' ');
+            document.getElementById('activeFilter').textContent = filterText;
         }
 
         // Function to update activity display based on time and filter
@@ -555,11 +563,12 @@
                     visibleCount++;
                 });
 
-
+                updateStats(visibleCount);
                 console.log(`Updated map with ${patterns.length} business activities for ${currentDay} ${currentHour}:00`);
 
             } catch (error) {
                 console.error('Error updating activity display:', error);
+                updateStats(0);
             }
         }
 

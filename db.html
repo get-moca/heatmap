@@ -360,77 +360,103 @@
             try {
                 console.log('🚀 Starting data analysis...');
                 
-                // Load all activity patterns with business info
-                const { data: activityData, error } = await supabase
+                // Method 1: Get all activity patterns first
+                const { data: allActivityData, error: activityError } = await supabase
                     .from('activity_patterns')
-                    .select(`
-                        business_id,
-                        occupancy_percent,
-                        businesses (
-                            title,
-                            category,
-                            business_type,
-                            address
-                        )
-                    `);
+                    .select('*');
                 
-                if (error) {
-                    console.error('❌ Error loading data:', error);
-                    throw error;
-                }
+                if (activityError) throw activityError;
                 
-                console.log(`📊 Loaded ${activityData.length} activity records`);
+                console.log(`📊 Loaded ${allActivityData.length} total activity records`);
                 
-                // Group activity data by business
-                const businessMap = new Map();
+                // Get unique business IDs that have activity data
+                const businessIdsWithActivity = [...new Set(allActivityData.map(record => record.business_id))];
+                console.log(`🏢 Found ${businessIdsWithActivity.length} unique businesses with activity data`);
                 
-                activityData.forEach(record => {
-                    if (!record.businesses) return; // Skip records without business info
+                // Now get business info for those IDs in batches
+                const allBusinessInfo = [];
+                const batchSize = 500; // Process in smaller batches
+                
+                for (let i = 0; i < businessIdsWithActivity.length; i += batchSize) {
+                    const batch = businessIdsWithActivity.slice(i, i + batchSize);
                     
-                    const businessId = record.business_id;
+                    const { data: businessBatch, error: businessError } = await supabase
+                        .from('businesses')
+                        .select('*')
+                        .in('id', batch);
                     
-                    if (!businessMap.has(businessId)) {
-                        businessMap.set(businessId, {
-                            info: record.businesses,
-                            activities: []
-                        });
+                    if (businessError) {
+                        console.error('Error loading business batch:', businessError);
+                        continue;
                     }
                     
-                    businessMap.get(businessId).activities.push(record.occupancy_percent);
+                    allBusinessInfo.push(...businessBatch);
+                    console.log(`📋 Loaded business info batch ${Math.floor(i/batchSize) + 1}, total so far: ${allBusinessInfo.length}`);
+                }
+                
+                console.log(`🏢 Successfully loaded info for ${allBusinessInfo.length} businesses`);
+                
+                // Create a map of business info by ID for quick lookup
+                const businessInfoMap = new Map();
+                allBusinessInfo.forEach(business => {
+                    businessInfoMap.set(business.id, business);
                 });
                 
-                console.log(`🏢 Found ${businessMap.size} unique businesses with activity data`);
+                // Group activity data by business and calculate averages
+                const businessActivityMap = new Map();
                 
-                // Calculate averages for each business
+                allActivityData.forEach(record => {
+                    const businessId = record.business_id;
+                    
+                    if (!businessActivityMap.has(businessId)) {
+                        businessActivityMap.set(businessId, []);
+                    }
+                    
+                    businessActivityMap.get(businessId).push(record.occupancy_percent);
+                });
+                
+                console.log(`📊 Grouped activity data for ${businessActivityMap.size} businesses`);
+                
+                // Calculate rankings
                 const businessRankings = [];
                 
-                businessMap.forEach((data, businessId) => {
-                    const activities = data.activities;
+                businessActivityMap.forEach((activities, businessId) => {
+                    const businessInfo = businessInfoMap.get(businessId);
+                    
+                    if (!businessInfo) {
+                        console.warn(`⚠️ No business info found for ID: ${businessId}`);
+                        return;
+                    }
+                    
                     const totalActivity = activities.reduce((sum, activity) => sum + activity, 0);
                     const averageActivity = totalActivity / activities.length;
                     
                     businessRankings.push({
                         businessId: businessId,
-                        title: data.info.title,
-                        category: data.info.category,
-                        business_type: data.info.business_type,
-                        address: data.info.address,
-                        averageActivity: Math.round(averageActivity * 10) / 10, // Round to 1 decimal
+                        title: businessInfo.title,
+                        category: businessInfo.category,
+                        business_type: businessInfo.business_type,
+                        address: businessInfo.address,
+                        averageActivity: Math.round(averageActivity * 10) / 10,
                         dataPoints: activities.length,
                         totalActivity: totalActivity
                     });
                 });
                 
-                console.log(`📈 Calculated averages for ${businessRankings.length} businesses`);
+                console.log(`📈 Final rankings: ${businessRankings.length} businesses`);
+                console.log('📊 Activity range:', {
+                    min: Math.min(...businessRankings.map(b => b.averageActivity)),
+                    max: Math.max(...businessRankings.map(b => b.averageActivity))
+                });
                 
                 // Sort and get top/bottom 10
                 const sortedByActivity = businessRankings.sort((a, b) => b.averageActivity - a.averageActivity);
                 
                 const top10Busiest = sortedByActivity.slice(0, 10);
-                const top10Quietest = sortedByActivity.slice(-10).reverse(); // Get last 10 and reverse for ascending order
+                const top10Quietest = sortedByActivity.slice(-10).reverse();
                 
-                console.log('🔥 Busiest business:', top10Busiest[0]);
-                console.log('😴 Quietest business:', top10Quietest[0]);
+                console.log('🔥 Top 3 busiest:', top10Busiest.slice(0, 3).map(b => `${b.title}: ${b.averageActivity}%`));
+                console.log('😴 Top 3 quietest:', top10Quietest.slice(0, 3).map(b => `${b.title}: ${b.averageActivity}%`));
                 
                 // Display results
                 displayRankings(top10Busiest, top10Quietest, businessRankings);

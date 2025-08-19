@@ -267,10 +267,7 @@
             </div>
         </div>
         
-        <div class="full-width-section">
-            <div class="chart-title">Daily Activity Patterns by Business Type</div>
-            <canvas id="weeklyPatternChart" style="height: 300px;"></canvas>
-        </div>
+
         
         <div class="tables-section">
             <div class="table-container">
@@ -386,7 +383,6 @@
             // Create charts
             createBusinessTypesChart();
             createHourlyActivityChart();
-            createWeeklyPatternChart();
             
             // Create tables
             createBusinessTables();
@@ -490,92 +486,7 @@
             });
         }
 
-        function createWeeklyPatternChart() {
-            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-            
-            // Get top 5 most common business types only
-            const typeCounts = {};
-            allBusinessData.forEach(business => {
-                if (business.business_type) {
-                    typeCounts[business.business_type] = (typeCounts[business.business_type] || 0) + 1;
-                }
-            });
-            
-            const topTypes = Object.entries(typeCounts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
-                .map(([type]) => type);
-            
-            console.log('Top business types:', topTypes);
-            
-            const datasets = topTypes.map((type, index) => {
-                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
-                const weeklyData = [];
-                
-                days.forEach(day => {
-                    const dayRecords = allActivityData.filter(record => 
-                        record.day_of_week === day && 
-                        record.businesses && 
-                        record.businesses.business_type === type
-                    );
-                    
-                    const avgActivity = dayRecords.length > 0 
-                        ? Math.round(dayRecords.reduce((sum, record) => sum + record.occupancy_percent, 0) / dayRecords.length)
-                        : 0;
-                    
-                    weeklyData.push(avgActivity);
-                });
-                
-                return {
-                    label: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
-                    data: weeklyData,
-                    borderColor: colors[index],
-                    backgroundColor: colors[index] + '20',
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                };
-            });
 
-            const ctx = document.getElementById('weeklyPatternChart').getContext('2d');
-            
-            // Destroy existing chart if it exists
-            if (window.weeklyChart) {
-                window.weeklyChart.destroy();
-            }
-            
-            window.weeklyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        }
-                    }
-                }
-            });
-        }
 
         function createBusinessTables() {
             // Calculate average activity per business

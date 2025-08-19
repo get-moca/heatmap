@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mallorca Business Analytics Dashboard</title>
+    <title>Mallorca Business Activity Rankings</title>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         * {
@@ -23,55 +20,230 @@
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
             color: #1e293b;
+            padding: 20px;
         }
         
-        .dashboard-container {
-            max-width: 1800px;
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             background: white;
-            padding: 30px;
+            padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
         
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 700;
             color: #1e293b;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         
         .header p {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: #64748b;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.3rem;
+            color: #64748b;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .rankings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .ranking-section {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            padding: 30px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .busiest-header {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .quietest-header {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        
+        .ranking-list {
+            padding: 0;
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+        
+        .ranking-item:hover {
+            background: #f8fafc;
+        }
+        
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rank-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        
+        .busiest .rank-number {
+            background: linear-gradient(135deg, #fef3c7, #fbbf24);
+            color: #92400e;
+        }
+        
+        .quietest .rank-number {
+            background: linear-gradient(135deg, #dbeafe, #60a5fa);
+            color: #1e40af;
+        }
+        
+        .business-info {
+            flex-grow: 1;
+            margin-right: 20px;
+        }
+        
+        .business-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        
+        .business-details {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .business-type {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .activity-score {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        
+        .activity-percentage {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .busiest .activity-percentage {
+            color: #dc2626;
+        }
+        
+        .quietest .activity-percentage {
+            color: #3b82f6;
+        }
+        
+        .data-points {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+        
+        .activity-bar {
+            width: 80px;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .activity-fill {
+            height: 100%;
+            transition: width 0.8s ease;
+        }
+        
+        .busiest .activity-fill {
+            background: linear-gradient(90deg, #fbbf24, #dc2626);
+        }
+        
+        .quietest .activity-fill {
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+        }
+        
+        .stats-summary {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            text-align: center;
         }
         
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 30px;
         }
         
-        .stat-card {
-            background: white;
-            padding: 25px;
+        .stat-item {
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
             border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            text-align: center;
         }
         
         .stat-number {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #3b82f6;
-            margin-bottom: 5px;
+            color: #1e293b;
+            margin-bottom: 8px;
         }
         
         .stat-label {
@@ -80,247 +252,96 @@
             font-weight: 500;
         }
         
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .chart-container {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        
-        .chart-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .tables-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-        
-        .table-header {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            padding: 20px;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        
-        .table-content {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        th {
-            background: #f8fafc;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.9rem;
-        }
-        
-        td {
-            font-size: 0.9rem;
-            color: #334155;
-        }
-        
-        .activity-bar {
-            background: #e2e8f0;
-            height: 6px;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-        
-        .activity-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-        
-        .business-name {
-            font-weight: 600;
-            color: #1e293b;
-        }
-        
-        .business-type {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 2px;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #64748b;
-            font-size: 1.1rem;
-        }
-        
-        .full-width-section {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
-        }
-        
-        .heatmap-grid {
-            display: grid;
-            grid-template-columns: repeat(24, 1fr);
-            gap: 2px;
-            margin-top: 15px;
-        }
-        
-        .hour-cell {
-            aspect-ratio: 1;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: white;
-            font-weight: 500;
-        }
-        
-        @media (max-width: 1200px) {
-            .charts-grid, .tables-section {
+        @media (max-width: 1024px) {
+            .rankings-grid {
                 grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
             }
         }
         
         @media (max-width: 768px) {
-            .dashboard-container {
+            body {
                 padding: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
             }
             
             .header h1 {
                 font-size: 2rem;
             }
             
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .ranking-item {
+                padding: 15px 20px;
+            }
+            
+            .business-name {
+                font-size: 1rem;
+            }
+            
+            .activity-percentage {
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
+    <div class="container">
         <div class="header">
-            <h1>📊 Mallorca Business Analytics</h1>
-            <p>Internal dashboard for analyzing business activity patterns and monetization opportunities</p>
+            <h1>🏆 Business Activity Rankings</h1>
+            <p>Top 10 busiest and quietest businesses in Mallorca based on activity data</p>
         </div>
         
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalBusinesses">-</div>
-                <div class="stat-label">Total Businesses</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="avgActivity">-</div>
-                <div class="stat-label">Avg Activity %</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="peakHour">-</div>
-                <div class="stat-label">Peak Hour</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="quietHour">-</div>
-                <div class="stat-label">Quietest Hour</div>
-            </div>
+        <div id="loadingSection" class="loading">
+            <div class="spinner"></div>
+            <div>Analyzing business activity data...</div>
         </div>
         
-        <div class="charts-grid">
-            <div class="chart-container">
-                <div class="chart-title">Business Types Distribution</div>
-                <canvas id="businessTypesChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">Average Activity by Hour</div>
-                <canvas id="hourlyActivityChart"></canvas>
-            </div>
-        </div>
-        
-
-        
-        <div class="tables-section">
-            <div class="table-container">
-                <div class="table-header">🔥 Top 20 Busiest Businesses</div>
-                <div class="table-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Business</th>
-                                <th>Type</th>
-                                <th>Avg Activity</th>
-                            </tr>
-                        </thead>
-                        <tbody id="busiestBusinesses">
-                            <tr><td colspan="3" class="loading">Loading data...</td></tr>
-                        </tbody>
-                    </table>
+        <div id="mainContent" style="display: none;">
+            <div class="rankings-grid">
+                <div class="ranking-section busiest">
+                    <div class="section-header busiest-header">
+                        🔥 Top 10 Busiest Businesses
+                    </div>
+                    <div class="ranking-list" id="busiestList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="ranking-section quietest">
+                    <div class="section-header quietest-header">
+                        😴 Top 10 Quietest Businesses
+                    </div>
+                    <div class="ranking-list" id="quietestList">
+                        <!-- Populated by JavaScript -->
+                    </div>
                 </div>
             </div>
             
-            <div class="table-container">
-                <div class="table-header">😴 Top 20 Quietest Businesses</div>
-                <div class="table-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Business</th>
-                                <th>Type</th>
-                                <th>Avg Activity</th>
-                            </tr>
-                        </thead>
-                        <tbody id="quietestBusinesses">
-                            <tr><td colspan="3" class="loading">Loading data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="full-width-section">
-            <div class="chart-title">📈 Monetization Opportunities</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
-                <div style="background: #fef3c7; padding: 20px; border-radius: 10px; border-left: 4px solid #f59e0b;">
-                    <h4 style="color: #92400e; margin-bottom: 10px;">🎯 Low Activity Targets</h4>
-                    <p style="color: #b45309; font-size: 0.9rem;" id="lowActivityCount">Finding businesses with low activity for visibility boost ads...</p>
-                </div>
-                <div style="background: #dcfce7; padding: 20px; border-radius: 10px; border-left: 4px solid #22c55e;">
-                    <h4 style="color: #15803d; margin-bottom: 10px;">💰 High Activity Targets</h4>
-                    <p style="color: #166534; font-size: 0.9rem;" id="highActivityCount">Finding busy businesses for crowd management solutions...</p>
-                </div>
-                <div style="background: #dbeafe; padding: 20px; border-radius: 10px; border-left: 4px solid #3b82f6;">
-                    <h4 style="color: #1d4ed8; margin-bottom: 10px;">⚡ Peak Opportunity</h4>
-                    <p style="color: #1e40af; font-size: 0.9rem;" id="peakOpportunity">Finding optimal advertising time slots...</p>
+            <div class="stats-summary">
+                <h2 style="margin-bottom: 30px; color: #1e293b;">Analysis Summary</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalAnalyzed">-</div>
+                        <div class="stat-label">Businesses Analyzed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="avgActivity">-</div>
+                        <div class="stat-label">Average Activity</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalDataPoints">-</div>
+                        <div class="stat-label">Total Data Points</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="activityRange">-</div>
+                        <div class="stat-label">Activity Range</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -335,297 +356,166 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVycHhpcm1md2VicWxtbW1jcnBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NTk0NzgsImV4cCI6MjA3MTAzNTQ3OH0.c8BPSWK9n-7aMahe22URZR79Qt612KOp8LcwgqBhChU';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let allBusinessData = [];
-        let allActivityData = [];
-
-        // Initialize dashboard
-        async function initDashboard() {
-            console.log('Loading dashboard data...');
-            
+        async function loadAndAnalyzeData() {
             try {
-                // Load businesses
-                const { data: businesses, error: businessError } = await supabase
-                    .from('businesses')
-                    .select('*');
+                console.log('🚀 Starting data analysis...');
                 
-                if (businessError) throw businessError;
-                allBusinessData = businesses;
-
-                // Load activity patterns
-                const { data: activities, error: activityError } = await supabase
+                // Load all activity patterns with business info
+                const { data: activityData, error } = await supabase
                     .from('activity_patterns')
                     .select(`
-                        *,
+                        business_id,
+                        occupancy_percent,
                         businesses (
                             title,
                             category,
-                            business_type
+                            business_type,
+                            address
                         )
                     `);
                 
-                if (activityError) throw activityError;
-                allActivityData = activities;
-
-                console.log(`Loaded ${businesses.length} businesses and ${activities.length} activity records`);
-                
-                // Process and display data
-                processAndDisplayData();
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
-
-        function processAndDisplayData() {
-            // Calculate basic stats
-            updateBasicStats();
-            
-            // Create charts
-            createBusinessTypesChart();
-            createHourlyActivityChart();
-            
-            // Create tables
-            createBusinessTables();
-            
-            // Update opportunity insights
-            // updateOpportunityInsights(); // Now handled in updateDetailedStats
-        }
-
-        function updateBasicStats() {
-            const totalBusinesses = allBusinessData.length;
-            
-            // Calculate average activity across all patterns
-            const totalActivity = allActivityData.reduce((sum, record) => sum + record.occupancy_percent, 0);
-            const avgActivity = Math.round(totalActivity / allActivityData.length);
-            
-            // Find peak and quiet hours
-            const hourlyAverages = {};
-            for (let hour = 0; hour < 24; hour++) {
-                const hourData = allActivityData.filter(record => record.hour === hour);
-                if (hourData.length > 0) {
-                    hourlyAverages[hour] = hourData.reduce((sum, record) => sum + record.occupancy_percent, 0) / hourData.length;
-                }
-            }
-            
-            const peakHour = Object.keys(hourlyAverages).reduce((a, b) => hourlyAverages[a] > hourlyAverages[b] ? a : b);
-            const quietHour = Object.keys(hourlyAverages).reduce((a, b) => hourlyAverages[a] < hourlyAverages[b] ? a : b);
-            
-            // Update DOM
-            document.getElementById('totalBusinesses').textContent = totalBusinesses.toLocaleString();
-            document.getElementById('avgActivity').textContent = avgActivity + '%';
-            document.getElementById('peakHour').textContent = peakHour + ':00';
-            document.getElementById('quietHour').textContent = quietHour + ':00';
-        }
-
-        function createBusinessTypesChart() {
-            const typeCount = {};
-            allBusinessData.forEach(business => {
-                const type = business.business_type || 'unknown';
-                typeCount[type] = (typeCount[type] || 0) + 1;
-            });
-
-            const ctx = document.getElementById('businessTypesChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(typeCount),
-                    datasets: [{
-                        data: Object.values(typeCount),
-                        backgroundColor: [
-                            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-                            '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-
-        function createHourlyActivityChart() {
-            const hourlyData = {};
-            
-            for (let hour = 0; hour < 24; hour++) {
-                const hourRecords = allActivityData.filter(record => record.hour === hour);
-                if (hourRecords.length > 0) {
-                    hourlyData[hour] = hourRecords.reduce((sum, record) => sum + record.occupancy_percent, 0) / hourRecords.length;
-                } else {
-                    hourlyData[hour] = 0;
-                }
-            }
-
-            const ctx = document.getElementById('hourlyActivityChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Object.keys(hourlyData).map(hour => hour + ':00'),
-                    datasets: [{
-                        label: 'Average Activity %',
-                        data: Object.values(hourlyData),
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }
-                }
-            });
-        }
-
-
-
-        function createBusinessTables() {
-            console.log('Processing business activity data...');
-            
-            // Group all activity records by business_id
-            const businessActivityMap = {};
-            
-            allActivityData.forEach(record => {
-                const businessId = record.business_id;
-                
-                if (!businessActivityMap[businessId]) {
-                    businessActivityMap[businessId] = {
-                        activities: [],
-                        businessInfo: record.businesses || null
-                    };
+                if (error) {
+                    console.error('❌ Error loading data:', error);
+                    throw error;
                 }
                 
-                businessActivityMap[businessId].activities.push(record.occupancy_percent);
-            });
-            
-            console.log(`Found activity data for ${Object.keys(businessActivityMap).length} businesses`);
-            
-            // Calculate averages for businesses with activity data
-            const businessesWithAverage = [];
-            
-            Object.entries(businessActivityMap).forEach(([businessId, data]) => {
-                if (data.activities.length > 0 && data.businessInfo) {
-                    const totalActivity = data.activities.reduce((sum, activity) => sum + activity, 0);
-                    const avgActivity = Math.round(totalActivity / data.activities.length);
+                console.log(`📊 Loaded ${activityData.length} activity records`);
+                
+                // Group activity data by business
+                const businessMap = new Map();
+                
+                activityData.forEach(record => {
+                    if (!record.businesses) return; // Skip records without business info
                     
-                    businessesWithAverage.push({
+                    const businessId = record.business_id;
+                    
+                    if (!businessMap.has(businessId)) {
+                        businessMap.set(businessId, {
+                            info: record.businesses,
+                            activities: []
+                        });
+                    }
+                    
+                    businessMap.get(businessId).activities.push(record.occupancy_percent);
+                });
+                
+                console.log(`🏢 Found ${businessMap.size} unique businesses with activity data`);
+                
+                // Calculate averages for each business
+                const businessRankings = [];
+                
+                businessMap.forEach((data, businessId) => {
+                    const activities = data.activities;
+                    const totalActivity = activities.reduce((sum, activity) => sum + activity, 0);
+                    const averageActivity = totalActivity / activities.length;
+                    
+                    businessRankings.push({
                         businessId: businessId,
-                        title: data.businessInfo.title,
-                        category: data.businessInfo.category,
-                        business_type: data.businessInfo.business_type,
-                        avgActivity: avgActivity,
-                        dataPoints: data.activities.length,
+                        title: data.info.title,
+                        category: data.info.category,
+                        business_type: data.info.business_type,
+                        address: data.info.address,
+                        averageActivity: Math.round(averageActivity * 10) / 10, // Round to 1 decimal
+                        dataPoints: activities.length,
                         totalActivity: totalActivity
                     });
-                }
-            });
-            
-            console.log(`Calculated averages for ${businessesWithAverage.length} businesses`);
-            
-            // Sort to get busiest and quietest
-            const busiest = [...businessesWithAverage]
-                .sort((a, b) => b.avgActivity - a.avgActivity)
-                .slice(0, 20);
+                });
                 
-            const quietest = [...businessesWithAverage]
-                .sort((a, b) => a.avgActivity - b.avgActivity)
-                .slice(0, 20);
-            
-            console.log('Busiest business:', busiest[0]);
-            console.log('Quietest business:', quietest[0]);
-            
-            // Find businesses without activity data
-            const businessesWithActivityIds = new Set(Object.keys(businessActivityMap));
-            const businessesWithoutData = allBusinessData.filter(business => 
-                !businessesWithActivityIds.has(business.id.toString())
-            );
-            
-            console.log(`Businesses without activity data: ${businessesWithoutData.length}`);
-            
-            // Populate tables
-            populateBusinessTable('busiestBusinesses', busiest);
-            populateBusinessTable('quietestBusinesses', quietest);
-            
-            // Update stats
-            updateDetailedStats(allBusinessData, businessesWithAverage, businessesWithoutData);
-        }
-
-        function populateBusinessTable(tableId, businesses) {
-            const tbody = document.getElementById(tableId);
-            tbody.innerHTML = '';
-
-            businesses.forEach((business, index) => {
-                const row = document.createElement('tr');
+                console.log(`📈 Calculated averages for ${businessRankings.length} businesses`);
                 
-                const getActivityColor = (activity) => {
-                    if (activity >= 80) return '#ef4444';
-                    if (activity >= 60) return '#f59e0b';
-                    if (activity >= 40) return '#eab308';
-                    if (activity >= 20) return '#10b981';
-                    return '#3b82f6';
-                };
-
-                row.innerHTML = `
-                    <td>
-                        <div class="business-name">${business.title}</div>
-                        <div class="business-type">${business.category}</div>
-                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 2px;">
-                            ${business.dataPoints || 'N/A'} data points
-                        </div>
-                    </td>
-                    <td>${business.business_type?.replace('_', ' ') || 'Unknown'}</td>
-                    <td>
-                        <strong>${business.avgActivity}%</strong>
-                        <div class="activity-bar">
-                            <div class="activity-fill" style="width: ${business.avgActivity}%; background: ${getActivityColor(business.avgActivity)};"></div>
-                        </div>
-                    </td>
+                // Sort and get top/bottom 10
+                const sortedByActivity = businessRankings.sort((a, b) => b.averageActivity - a.averageActivity);
+                
+                const top10Busiest = sortedByActivity.slice(0, 10);
+                const top10Quietest = sortedByActivity.slice(-10).reverse(); // Get last 10 and reverse for ascending order
+                
+                console.log('🔥 Busiest business:', top10Busiest[0]);
+                console.log('😴 Quietest business:', top10Quietest[0]);
+                
+                // Display results
+                displayRankings(top10Busiest, top10Quietest, businessRankings);
+                
+            } catch (error) {
+                console.error('💥 Analysis failed:', error);
+                document.getElementById('loadingSection').innerHTML = `
+                    <div style="color: #ef4444;">
+                        <h3>Error loading data</h3>
+                        <p>${error.message}</p>
+                    </div>
                 `;
-                
-                tbody.appendChild(row);
-            });
-        }
-
-        function updateDetailedStats(allBusinesses, withData, withoutData) {
-            // Update opportunity insights with more accurate data
-            const avgActivities = withData.map(b => b.avgActivity);
-            const lowActivity = avgActivities.filter(avg => avg < 30).length;
-            const highActivity = avgActivities.filter(avg => avg > 70).length;
-            
-            // Find peak opportunity hour
-            const hourlyAverages = {};
-            for (let hour = 0; hour < 24; hour++) {
-                const hourData = allActivityData.filter(record => record.hour === hour);
-                if (hourData.length > 0) {
-                    hourlyAverages[hour] = hourData.reduce((sum, record) => sum + record.occupancy_percent, 0) / hourData.length;
-                }
             }
-            const peakHour = Object.keys(hourlyAverages).reduce((a, b) => hourlyAverages[a] > hourlyAverages[b] ? a : b);
-
-            // Update insights with better data
-            document.getElementById('lowActivityCount').innerHTML = `
-                <strong>${lowActivity}</strong> businesses with activity data averaging <30% 
-                <br><small>+ ${withoutData.length} businesses with no activity data (potential new targets)</small>
+        }
+        
+        function displayRankings(busiest, quietest, allBusinesses) {
+            // Hide loading, show results
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            // Populate busiest list
+            const busiestList = document.getElementById('busiestList');
+            busiestList.innerHTML = '';
+            
+            busiest.forEach((business, index) => {
+                const item = createRankingItem(business, index + 1, 'busiest');
+                busiestList.appendChild(item);
+            });
+            
+            // Populate quietest list
+            const quietestList = document.getElementById('quietestList');
+            quietestList.innerHTML = '';
+            
+            quietest.forEach((business, index) => {
+                const item = createRankingItem(business, index + 1, 'quietest');
+                quietestList.appendChild(item);
+            });
+            
+            // Update summary stats
+            updateSummaryStats(allBusinesses);
+        }
+        
+        function createRankingItem(business, rank, type) {
+            const item = document.createElement('div');
+            item.className = `ranking-item ${type}`;
+            
+            const businessType = business.business_type ? 
+                business.business_type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : 
+                'Unknown';
+            
+            item.innerHTML = `
+                <div class="rank-number">${rank}</div>
+                <div class="business-info">
+                    <div class="business-name">${business.title}</div>
+                    <div class="business-details">${business.category}</div>
+                    <div class="business-type">${businessType}</div>
+                </div>
+                <div class="activity-score">
+                    <div class="activity-percentage">${business.averageActivity}%</div>
+                    <div class="data-points">${business.dataPoints} records</div>
+                    <div class="activity-bar">
+                        <div class="activity-fill" style="width: ${business.averageActivity}%"></div>
+                    </div>
+                </div>
             `;
             
-            document.getElementById('highActivityCount').textContent = `${highActivity} businesses averaging >70% activity - targets for crowd management solutions`;
-            document.getElementById('peakOpportunity').innerHTML = `
-                Peak advertising at <strong>${peakHour}:00</strong> when overall activity is highest
-                <br><small>Data coverage: ${withData.length}/${allBusinesses.length} businesses (${Math.round(withData.length/allBusinesses.length*100)}%)</small>
-            `;
+            return item;
         }
-
-        // Initialize dashboard on page load
-        initDashboard();
+        
+        function updateSummaryStats(businesses) {
+            const totalAnalyzed = businesses.length;
+            const totalDataPoints = businesses.reduce((sum, b) => sum + b.dataPoints, 0);
+            const averageActivity = businesses.reduce((sum, b) => sum + b.averageActivity, 0) / businesses.length;
+            
+            const maxActivity = Math.max(...businesses.map(b => b.averageActivity));
+            const minActivity = Math.min(...businesses.map(b => b.averageActivity));
+            
+            document.getElementById('totalAnalyzed').textContent = totalAnalyzed.toLocaleString();
+            document.getElementById('avgActivity').textContent = Math.round(averageActivity * 10) / 10 + '%';
+            document.getElementById('totalDataPoints').textContent = totalDataPoints.toLocaleString();
+            document.getElementById('activityRange').textContent = `${Math.round(minActivity * 10) / 10}% - ${Math.round(maxActivity * 10) / 10}%`;
+        }
+        
+        // Start the analysis
+        loadAndAnalyzeData();
     </script>
 </body>
 </html>

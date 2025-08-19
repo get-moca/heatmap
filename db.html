@@ -388,7 +388,7 @@
             createBusinessTables();
             
             // Update opportunity insights
-            updateOpportunityInsights();
+            // updateOpportunityInsights(); // Now handled in updateDetailedStats
         }
 
         function updateBasicStats() {
@@ -492,36 +492,51 @@
             // Calculate average activity per business
             const businessAverages = {};
             
+            // Initialize all businesses first
+            allBusinessData.forEach(business => {
+                businessAverages[business.id] = {
+                    total: 0,
+                    count: 0,
+                    title: business.title,
+                    category: business.category,
+                    business_type: business.business_type,
+                    hasActivityData: false
+                };
+            });
+            
+            // Add activity data where available
             allActivityData.forEach(record => {
-                if (record.businesses) {
-                    const businessId = record.business_id;
-                    if (!businessAverages[businessId]) {
-                        businessAverages[businessId] = {
-                            total: 0,
-                            count: 0,
-                            title: record.businesses.title,
-                            category: record.businesses.category,
-                            business_type: record.businesses.business_type
-                        };
-                    }
+                const businessId = record.business_id;
+                if (businessAverages[businessId]) {
                     businessAverages[businessId].total += record.occupancy_percent;
                     businessAverages[businessId].count += 1;
+                    businessAverages[businessId].hasActivityData = true;
                 }
             });
 
             // Convert to array and calculate averages
             const businessList = Object.values(businessAverages).map(business => ({
                 ...business,
-                avgActivity: Math.round(business.total / business.count)
+                avgActivity: business.count > 0 ? Math.round(business.total / business.count) : 0
             }));
 
-            // Sort for busiest and quietest
-            const busiest = businessList.sort((a, b) => b.avgActivity - a.avgActivity).slice(0, 20);
-            const quietest = businessList.sort((a, b) => a.avgActivity - b.avgActivity).slice(0, 20);
+            // Filter businesses with activity data for meaningful comparison
+            const businessesWithData = businessList.filter(business => business.hasActivityData);
+            const businessesWithoutData = businessList.filter(business => !business.hasActivityData);
+
+            console.log(`Businesses with activity data: ${businessesWithData.length}`);
+            console.log(`Businesses without activity data: ${businessesWithoutData.length}`);
+
+            // Sort for busiest and quietest (only those with data)
+            const busiest = [...businessesWithData].sort((a, b) => b.avgActivity - a.avgActivity).slice(0, 20);
+            const quietest = [...businessesWithData].sort((a, b) => a.avgActivity - b.avgActivity).slice(0, 20);
 
             // Populate tables
             populateBusinessTable('busiestBusinesses', busiest);
             populateBusinessTable('quietestBusinesses', quietest);
+            
+            // Update stats
+            updateDetailedStats(businessList, businessesWithData, businessesWithoutData);
         }
 
         function populateBusinessTable(tableId, businesses) {
@@ -557,22 +572,9 @@
             });
         }
 
-        function updateOpportunityInsights() {
-            // Calculate opportunity metrics
-            const businessAverages = {};
-            
-            allActivityData.forEach(record => {
-                if (record.businesses) {
-                    const businessId = record.business_id;
-                    if (!businessAverages[businessId]) {
-                        businessAverages[businessId] = { total: 0, count: 0 };
-                    }
-                    businessAverages[businessId].total += record.occupancy_percent;
-                    businessAverages[businessId].count += 1;
-                }
-            });
-
-            const avgActivities = Object.values(businessAverages).map(b => Math.round(b.total / b.count));
+        function updateDetailedStats(allBusinesses, withData, withoutData) {
+            // Update opportunity insights with more accurate data
+            const avgActivities = withData.map(b => b.avgActivity);
             const lowActivity = avgActivities.filter(avg => avg < 30).length;
             const highActivity = avgActivities.filter(avg => avg > 70).length;
             
@@ -586,10 +588,17 @@
             }
             const peakHour = Object.keys(hourlyAverages).reduce((a, b) => hourlyAverages[a] > hourlyAverages[b] ? a : b);
 
-            // Update insights
-            document.getElementById('lowActivityCount').textContent = `${lowActivity} businesses averaging <30% activity - prime targets for visibility boost ads`;
+            // Update insights with better data
+            document.getElementById('lowActivityCount').innerHTML = `
+                <strong>${lowActivity}</strong> businesses with activity data averaging <30% 
+                <br><small>+ ${withoutData.length} businesses with no activity data (potential new targets)</small>
+            `;
+            
             document.getElementById('highActivityCount').textContent = `${highActivity} businesses averaging >70% activity - targets for crowd management solutions`;
-            document.getElementById('peakOpportunity').textContent = `Peak advertising opportunity at ${peakHour}:00 when overall activity is highest`;
+            document.getElementById('peakOpportunity').innerHTML = `
+                Peak advertising at <strong>${peakHour}:00</strong> when overall activity is highest
+                <br><small>Data coverage: ${withData.length}/${allBusinesses.length} businesses (${Math.round(withData.length/allBusinesses.length*100)}%)</small>
+            `;
         }
 
         // Initialize dashboard on page load

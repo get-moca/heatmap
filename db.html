@@ -492,9 +492,23 @@
 
         function createWeeklyPatternChart() {
             const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-            const types = [...new Set(allBusinessData.map(b => b.business_type))].filter(t => t);
             
-            const datasets = types.slice(0, 5).map((type, index) => {
+            // Get top 5 most common business types only
+            const typeCounts = {};
+            allBusinessData.forEach(business => {
+                if (business.business_type) {
+                    typeCounts[business.business_type] = (typeCounts[business.business_type] || 0) + 1;
+                }
+            });
+            
+            const topTypes = Object.entries(typeCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([type]) => type);
+            
+            console.log('Top business types:', topTypes);
+            
+            const datasets = topTypes.map((type, index) => {
                 const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
                 const weeklyData = [];
                 
@@ -506,7 +520,7 @@
                     );
                     
                     const avgActivity = dayRecords.length > 0 
-                        ? dayRecords.reduce((sum, record) => sum + record.occupancy_percent, 0) / dayRecords.length
+                        ? Math.round(dayRecords.reduce((sum, record) => sum + record.occupancy_percent, 0) / dayRecords.length)
                         : 0;
                     
                     weeklyData.push(avgActivity);
@@ -517,12 +531,20 @@
                     data: weeklyData,
                     borderColor: colors[index],
                     backgroundColor: colors[index] + '20',
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 };
             });
 
             const ctx = document.getElementById('weeklyPatternChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // Destroy existing chart if it exists
+            if (window.weeklyChart) {
+                window.weeklyChart.destroy();
+            }
+            
+            window.weeklyChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
@@ -531,10 +553,24 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 100
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
                         }
                     }
                 }
